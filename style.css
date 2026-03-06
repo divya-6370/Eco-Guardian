@@ -1,0 +1,134 @@
+/* General Reset & Font */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+  
+  body {
+    background: url('markus-spiske-dYZumbs8f_E-unsplash.jpg') no-repeat center center fixed;
+    background-size: cover;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    background-image: url('./climate_justice.jpg'); /* Path to your image */
+    background-size: cover;       /* Scale the image to cover the entire background */
+    background-position: center;  /* Center the image */
+    background-repeat: no-repeat; /* Prevent the image from repeating */
+    height: 100vh;                /* Full viewport height */
+    margin: 0;
+  }
+  
+  /* Shared Form Container Styles */
+  .signup, .login {
+    background: rgb(240, 240, 243);
+    padding: 30px 40px;
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    width: 100%;
+    max-width: 400px;
+    animation: fadeInUp 0.6s ease-in-out;
+  }
+  
+  /* Titles */
+  .signup h1, .login h1 {
+    font-size: 28px;
+    color: #333;
+    margin-bottom: 10px;
+    text-align: center;
+  }
+  .signup h4 {
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+  
+  /* Form Elements */
+  form {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  label {
+    margin-top: 10px;
+    margin-bottom: 5px;
+    color: #333;
+    font-size: 14px;
+  }
+  
+  input[type="text"],
+  input[type="email"],
+  input[type="password"] {
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 15px;
+    transition: border-color 0.3s ease;
+  }
+  
+  input[type="text"]:focus,
+  input[type="email"]:focus,
+  input[type="password"]:focus {
+    border-color: #28a745;
+    outline: none;
+  }
+  
+  input[type="submit"],
+  button[type="submit"] {
+    margin-top: 20px;
+    padding: 10px;
+    background: #28a745;
+    border: none;
+    border-radius: 6px;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+  }
+  
+  input[type="submit"]:hover,
+  button[type="submit"]:hover {
+    background: #218838;
+  }
+  
+  /* Footer text */
+  .signup p,
+  .login p {
+    margin-top: 15px;
+    font-size: 13px;
+    text-align: center;
+  }
+  
+  .signup a,
+  .login a {
+    color: #007bff;
+    text-decoration: none;
+  }
+  
+  .signup a:hover,
+  .login a:hover {
+    text-decoration: underline;
+  }
+  
+  /* Animation */
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* Responsive */
+  @media (max-width: 480px) {
+    .signup, .login {
+      padding: 25px 20px;
+    }
+  }  

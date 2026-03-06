@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Plastic Usage Tracker</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+      font-family: 'Segoe UI', sans-serif;
+      background: #eef3f7;
+    }
+
+    body {
+      position: relative;
+      z-index: 1;
+    }
+
+    canvas#bg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 0;
+    }
+
+    .container {
+      position: relative;
+      z-index: 2;
+      max-width: 800px;
+      margin: 60px auto;
+      background: rgba(255, 255, 255, 0.95);
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 0 15px rgba(0, 0, 0, 0.15);
+      animation: fadeInUp 1s ease-out;
+    }
+
+    @keyframes fadeInUp {
+      from {opacity: 0; transform: translateY(30px);}
+      to {opacity: 1; transform: translateY(0);}
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    select, input, button {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+      transition: 0.3s;
+    }
+
+    button {
+      background: #007bff;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #0056b3;
+      transform: scale(1.02);
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn-group {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 15px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    #ecoTip {
+      background: #d4edda;
+      border-left: 5px solid #28a745;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-style: italic;
+      animation: fadeIn 1s;
+    }
+
+    canvas {
+      margin-top: 30px;
+    }
+
+    ul {
+      padding-left: 20px;
+    }
+
+    li {
+      margin: 5px 0;
+      animation: fadeIn 0.5s ease-in;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    #usageList {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="bg"></canvas>
+
+<div class="container">
+  <h2>Plastic Usage Tracker</h2>
+  <div id="ecoTip"></div>
+
+  <div class="controls">
+    <input type="date" id="usageDate">
+    <select id="itemSelect">
+      <option disabled selected>Select a plastic item</option>
+      <optgroup label="Household Items">
+        <option value="water_bottle">Water bottles</option>
+        <option value="food_container">Food containers (Tupperware)</option>
+        <option value="grocery_bag">Grocery bags</option>
+        <option value="cleaning_bottle">Cleaning product bottles</option>
+        <option value="shampoo_bottle">Shampoo & conditioner bottles</option>
+        <option value="toothbrush">Toothbrush</option>
+        <option value="toothpaste_tube">Toothpaste tube</option>
+        <option value="soap_dispenser">Soap dispensers</option>
+        <option value="detergent_jug">Detergent jugs</option>
+      </optgroup>
+      <optgroup label="Kitchenware">
+        <option value="plastic_plate">Plastic plates and cups</option>
+        <option value="straw">Straws</option>
+        <option value="cutlery">Disposable cutlery</option>
+        <option value="cling_film">Food wrap/cling film</option>
+        <option value="snack_wrapper">Packaged snack wrappers</option>
+        <option value="microwave_tray">Microwaveable plastic trays</option>
+      </optgroup>
+      <optgroup label="Personal Items">
+        <option value="hairbrush">Hairbrushes and combs</option>
+        <option value="deodorant">Deodorant sticks</option>
+        <option value="makeup_container">Makeup containers</option>
+        <option value="phone_case">Phone case</option>
+        <option value="pen">Pens and markers</option>
+        <option value="eyeglasses">Eyeglass frames</option>
+      </optgroup>
+      <optgroup label="Children's Items">
+        <option value="plastic_toy">Plastic toys</option>
+        <option value="pacifier">Pacifiers</option>
+        <option value="baby_bottle">Bottles and sippy cups</option>
+        <option value="diaper_packaging">Diaper packaging</option>
+      </optgroup>
+      <optgroup label="Office & School Supplies">
+        <option value="folder">Folders and binders</option>
+        <option value="stationery">Stationery (tape, rulers)</option>
+        <option value="id_card">Plastic ID cards</option>
+        <option value="usb_stick">USB sticks</option>
+      </optgroup>
+    </select>
+
+    <input type="number" id="quantity" placeholder="Enter quantity used" min="1">
+    <select id="timeframeSelect" onchange="updateChart()">
+      <option value="daily">Daily View</option>
+      <option value="monthly" selected>Monthly View</option>
+      <option value="yearly">Yearly View</option>
+    </select>
+  </div>
+
+  <div class="btn-group">
+    <button onclick="addItem()">Add Usage</button>
+    <button onclick="resetData()">Reset All</button>
+    <button onclick="exportCSV()">Export CSV</button>
+    <button onclick="downloadChart()">Download Chart</button>
+  </div>
+
+  <div id="usageList"></div>
+  <canvas id="usageChart" height="150"></canvas>
+</div>
+
+<script>
+  // Three.js starry animated background
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+  const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById("bg"), alpha: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+
+  const starsGeometry = new THREE.BufferGeometry();
+  const starCount = 500;
+  const positions = [];
+
+  for (let i = 0; i < starCount; i++) {
+    positions.push((Math.random() - 0.5) * 1000);
+    positions.push((Math.random() - 0.5) * 1000);
+    positions.push(-Math.random() * 1000);
+  }
+
+  starsGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  const starsMaterial = new THREE.PointsMaterial({ color: 0xffffff });
+  const starField = new THREE.Points(starsGeometry, starsMaterial);
+  scene.add(starField);
+
+  camera.position.z = 5;
+
+  function animateStars() {
+    requestAnimationFrame(animateStars);
+    starField.rotation.x += 0.0005;
+    starField.rotation.y += 0.0005;
+    renderer.render(scene, camera);
+  }
+
+  animateStars();
+
+  // Tracker logic
+  const plasticWeights = {
+    water_bottle: 20, food_container: 100, grocery_bag: 10, cleaning_bottle: 120,
+    shampoo_bottle: 80, toothbrush: 25, toothpaste_tube: 60, soap_dispenser: 100,
+    detergent_jug: 250, plastic_plate: 15, straw: 1, cutlery: 5, cling_film: 5,
+    snack_wrapper: 5, microwave_tray: 30, hairbrush: 50, deodorant: 40,
+    makeup_container: 35, phone_case: 60, pen: 10, eyeglasses: 25, plastic_toy: 150,
+    pacifier: 30, baby_bottle: 100, diaper_packaging: 50, folder: 80,
+    stationery: 20, id_card: 10, usb_stick: 15
+  };
+
+  const ecoTips = [
+    "Switch to bar shampoo to avoid plastic bottles.",
+    "Use beeswax wraps instead of cling film.",
+    "Carry a reusable water bottle.",
+    "Refill detergent bottles at zero-waste stores.",
+    "Say no to plastic straws and cutlery.",
+    "Use cloth bags instead of plastic grocery bags.",
+    "Buy in bulk to reduce packaging waste.",
+    "Repair instead of replacing plastic items."
+  ];
+
+  const plasticFacts = {
+    water_bottle: "It takes 450 years for a plastic bottle to degrade.",
+    grocery_bag: "Plastic bags are used for minutes but last centuries.",
+    toothbrush: "Every toothbrush you’ve ever used still exists!",
+    straw: "500 million straws are used every day in the US alone.",
+    diaper_packaging: "Disposable diapers are one of the top plastic waste contributors."
+  };
+
+  let entries = [];
+  let chart;
+
+  function showEcoTip() {
+    const tip = ecoTips[Math.floor(Math.random() * ecoTips.length)];
+    document.getElementById("ecoTip").textContent = "🌱 Tip: " + tip;
+  }
+
+  function formatLabel(str) {
+    return str.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
+  }
+
+  function getCO2EquivalentText(co2) {
+    const kmDriven = (co2 / 120).toFixed(2);
+    const lightBulbHours = (co2 / 0.06).toFixed(0);
+    return `🚗 ${kmDriven} km by car, 🕯️ ${lightBulbHours} hours of lighting`;
+  }
+
+  function addItem() {
+    const item = document.getElementById("itemSelect").value;
+    const qty = parseInt(document.getElementById("quantity").value);
+    const date = document.getElementById("usageDate").value;
+
+    if (!item || !qty || qty <= 0 || !date) {
+        alert("Please enter date, item, and quantity correctly.");
+        return;
+    }
+
+    const weight = plasticWeights[item] * qty;
+    const co2 = weight * 6;
+
+    entries.push({ item, qty, date, weight, co2 });
+    updateList();
+    updateChart();
+
+    // Send data to PHP backend
+    fetch('save_usage.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `item=${encodeURIComponent(item)}&quantity=${qty}&date=${encodeURIComponent(date)}&weight=${weight}&co2=${co2}`
+    })
+    .then(response => response.json())
+    .then(data => alert(data.message))
+    .catch(err => console.error('Error:', err));
+
+    document.getElementById("quantity").value = "";
+    document.getElementById("itemSelect").selectedIndex = 0;
+    document.getElementById("usageDate").value = "";
+    sendToDatabase(item, qty, date, weight, co2);
+
+}
+
+
+  function updateList() {
+    const listDiv = document.getElementById("usageList");
+    if (entries.length === 0) {
+      listDiv.innerHTML = "<p>No usage data added yet.</p>";
+      return;
+    }
+
+    let html = "<h4>Usage Entries:</h4><ul>";
+    entries.forEach((e, idx) => {
+      html += `<li>${e.date} - ${e.qty} x ${formatLabel(e.item)} = ${e.weight}g plastic (~${e.co2}g CO₂)<br>
+        <small>${getCO2EquivalentText(e.co2)}</small>
+        <button onclick="deleteEntry(${idx})" style="float:right;background:#dc3545;color:white;border:none;padding:4px 8px;border-radius:5px;">X</button></li>`;
+    });
+    html += "</ul>";
+    listDiv.innerHTML = html;
+  }
+
+  function updateChart() {
+    const timeframe = document.getElementById("timeframeSelect").value;
+    const ctx = document.getElementById("usageChart").getContext("2d");
+    if (chart) chart.destroy();
+
+    let labels = [], data = [];
+
+    if (timeframe === "daily") {
+      const usageByDate = {};
+      entries.forEach(e => {
+        if (!usageByDate[e.date]) usageByDate[e.date] = 0;
+        usageByDate[e.date] += e.weight;
+      });
+      labels = Object.keys(usageByDate).sort();
+      data = labels.map(date => usageByDate[date]);
+    } else {
+      const totalDaily = entries.reduce((sum, e) => sum + e.weight, 0);
+      if (timeframe === "monthly") {
+        labels = Array.from({ length: 30 }, (_, i) => `Day ${i + 1}`);
+        data = labels.map(() => totalDaily);
+      } else {
+        labels = Array.from({ length: 12 }, (_, i) => `Month ${i + 1}`);
+        data = labels.map(() => totalDaily * 30);
+      }
+    }
+
+    chart = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: labels,
+        datasets: [{
+          label: `Plastic Usage (${timeframe}) in grams`,
+          data: data,
+          fill: true,
+          borderColor: "#007bff",
+          backgroundColor: "rgba(0, 123, 255, 0.2)",
+          tension: 0.3,
+          pointRadius: 3,
+          borderWidth: 2
+        }]
+      },
+      options: {
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: "Plastic (g)"
+            }
+          },
+          x: {
+            title: {
+              display: true,
+              text: timeframe === "daily" ? "Date" : timeframe === "monthly" ? "Day" : "Month"
+            }
+          }
+        }
+      }
+    });
+  }
+
+  function resetData() {
+    if (confirm("Are you sure you want to reset all data?")) {
+      entries = [];
+      updateList();
+      updateChart();
+    }
+  }
+
+  function deleteEntry(index) {
+    entries.splice(index, 1);
+    updateList();
+    updateChart();
+  }
+
+  function exportCSV() {
+    let csv = "Date,Item,Quantity,Weight (g),CO2 Emissions (g)\n";
+    entries.forEach(e => {
+      csv += `${e.date},${formatLabel(e.item)},${e.qty},${e.weight},${e.co2}\n`;
+    });
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "plastic_usage_data.csv";
+    a.click();
+  }
+
+  function downloadChart() {
+    const link = document.createElement("a");
+    link.download = "plastic_usage_chart.png";
+    link.href = document.getElementById("usageChart").toDataURL("image/png");
+    link.click();
+  }
+
+  showEcoTip();
+  function sendToDatabase(item, qty, date, weight, co2) {
+  fetch('http://localhost/store_data.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      userId: userId,
+      item: item,
+      quantity: qty,
+      usageDate: date,
+      weight: weight,
+      co2: co2
+    })
+  })
+  .then(response => response.json())
+  .then(data => console.log(data.message))
+  .catch(err => console.error('Error:', err));
+}
+// Generate unique user ID and store in localStorage
+if (!localStorage.getItem("userId")) {
+    const userId = 'user-' + Date.now() + '-' + Math.floor(Math.random() * 100000);
+    localStorage.setItem("userId", userId);
+}
+const userId = localStorage.getItem("userId");
+
+</script>
+</body>
+</html>
